@@ -80,7 +80,10 @@ async function handleScenarioAI(request, env) {
 
     const data = await anthropicResp.json();
     if (!anthropicResp.ok) {
-      return json({ error: data }, anthropicResp.status);
+      // Anthropic returns { type: 'error', error: { type, message } } — unwrap
+      // so the frontend's data.error.message actually finds the real reason.
+      const inner = (data && data.error) ? data.error : data;
+      return json({ error: inner }, anthropicResp.status);
     }
     return json(data, 200);
   } catch (err) {
