@@ -1,7 +1,8 @@
 /**
  * ══════════════════════════════════════════════════════════════════
  *  Worker: раздаёт сайт (public/) + обрабатывает /api/scenario-ai
- *  Провайдер: DeepSeek (OpenAI-совместимый API), не Anthropic.
+ *  Провайдер: OpenRouter, модель openrouter/free (авто-роутер по
+ *  бесплатным моделям — НЕ openrouter/auto, тот платный!).
  * ══════════════════════════════════════════════════════════════════
  *
  * Это ОДИН Worker с настоящим кодом (не "просто статика"), поэтому
@@ -10,14 +11,21 @@
  *
  * Локально: `npx wrangler dev`
  * Деплой:   `npx wrangler deploy`
- * Секрет:   `npx wrangler secret put DEEPSEEK_API_KEY`
- *           (ключ берётся на platform.deepseek.com — это ОТДЕЛЬНЫЙ
- *           аккаунт/баланс, не связан с Anthropic/console.anthropic.com)
+ * Секрет:   `npx wrangler secret put OPENROUTER_API_KEY`
+ *           (ключ на openrouter.ai — карта не нужна для бесплатных моделей)
+ *
+ * ВАЖНО про "бесплатно": лимит на бесплатные модели общий на ВЕСЬ
+ * аккаунт/ключ, а не на посетителя — 50 запросов в сутки, пока не
+ * пополните баланс хоть раз (после разового пополнения от $10 — уже
+ * 1000/сутки). Это лимит на всех пользователей сайта суммарно. Живой
+ * чат тратит несколько запросов за один диалог (открытие сцены +
+ * каждая реплика + разбор в конце), так что 50/день исчерпать реально
+ * быстро при активном использовании. Подробнее — в README.
  * ══════════════════════════════════════════════════════════════════
  */
 
-const SCENARIO_AI_MODEL = "deepseek-chat"; // V3.2, без "размышлений" — быстрее и дешевле; deepseek-reasoner для более сложных сценариев
-const DAILY_LIMIT_PER_IP = 40; // подберите под бюджет; работает только если подключён KV (см. wrangler.toml)
+const SCENARIO_AI_MODEL = "openrouter/free"; // авто-роутер по бесплатным моделям; НЕ openrouter/auto (тот платный)
+const DAILY_LIMIT_PER_IP = 40; // ваш собственный лимит поверх лимита OpenRouter; работает только если подключён KV (см. wrangler.toml)
 
 export default {
   async fetch(request, env, ctx) {
@@ -51,8 +59,8 @@ async function handleScenarioAI(request, env) {
     return json({ error: "messages array is required" }, 400);
   }
 
-  if (!env.DEEPSEEK_API_KEY) {
-    return json({ error: "Server misconfigured: DEEPSEEK_API_KEY is not set" }, 500);
+  if (!env.OPENROUTER_API_KEY) {
+    return json({ error: "Server misconfigured: OPENROUTER_API_KEY is not set" }, 500);
   }
 
   if (env.SCENARIO_KV) {
@@ -65,36 +73,38 @@ async function handleScenarioAI(request, env) {
 
   const cappedMaxTokens = Math.min(Number(max_tokens) || 1200, 6000);
 
-  // DeepSeek — OpenAI-совместимый формат: system идёt как ОБЫЧНОЕ сообщение
-  // в начале массива messages (у Anthropic это было отдельное поле "system").
-  const dsMessages = system ? [{ role: "system", content: system }, ...messages] : messages;
+  // OpenRouter — OpenAI-совместимый формат: system идёт обычным
+  // сообщением в начале массива messages, как у DeepSeek.
+  const orMessages = system ? [{ role: "system", content: system }, ...messages] : messages;
 
   try {
-    const dsResp = await fetch("https://api.deepseek.com/chat/completions", {
+    const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + env.DEEPSEEK_API_KEY,
+        "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
+        "HTTP-Referer": "https://amacademy.pro", // OpenRouter просит это для атрибуции трафика; поставьте свой домен
+        "X-Title": "AM Academy — Scenario Generator",
       },
       body: JSON.stringify({
         model: SCENARIO_AI_MODEL,
         max_tokens: cappedMaxTokens,
-        messages: dsMessages,
-        stream: false,
+        messages: orMessages,
       }),
     });
 
-    const data = await dsResp.json();
+    const data = await orResp.json();
 
-    if (!dsResp.ok) {
-      // DeepSeek возвращает { error: { message, type, code } }
+    if (!orResp.ok) {
       const inner = (data && data.error) ? data.error : data;
-      return json({ error: inner }, dsResp.status);
+      // 429 от OpenRouter на бесплатных моделях — это дневной лимит
+      // (общий на весь ключ), а не разовый сбой. Помечаем это явно.
+      if (orResp.status === 429) {
+        return json({ error: { message: "OpenRouter free-tier daily limit reached for this key (shared across all site visitors). Try again tomorrow, or add $10 credit once to raise the limit to 1000/day.", raw: inner } }, 429);
+      }
+      return json({ error: inner }, orResp.status);
     }
 
-    // Нормализуем OpenAI-формат ответа в тот же вид, что фронтенд уже
-    // умеет разбирать (content: [{type:'text', text: '...'}]), чтобы
-    // не трогать код на странице.
     const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
     return json({ content: [{ type: "text", text }] }, 200);
   } catch (err) {
