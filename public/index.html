@@ -455,10 +455,12 @@ Schema (all fields required):
     "bullets": array of 3-4 short concrete bullets on how to apply it in THIS scenario,
     "source": a short attribution note, e.g. "По мотивам практики ННО (Розенберг) и переговорной теории (Фишер и Юри)." — general, not inventing fake citations
   },
+  "counterpart_goal": 1 sentence — what the counterpart actually wants out of this conversation, underneath their surface complaint (their real objective, not just their opening position),
   "observer_questions": array of 3 short questions for a third person watching the roleplay to track,
   "script": array of 10-14 objects {"who": "you" or "counterpart", "text": "..."} — a realistic alternating dialogue with natural rhythm, real tension appropriate to the requested intensity, concrete details from the context, not generic. The final one or two lines should show a constructive move by "you" (using the technique), not necessarily full resolution.,
   "key_note": 1 sentence — the single most important takeaway from the reference script,
   "phrases": array of 4-6 objects {"text": a ready-to-use phrase in ${langName} that "you" could say in a real version of this conversation, "note": a very short (under 10 words) note on when/why to use it},
+  "success_criteria": array of 3-4 short, concrete, observable behaviors that would count as "handling this well" (e.g. "acknowledged the counterpart's version before explaining your own", "proposed one concrete next step", not vague things like "stayed calm"),
   "debrief_questions": array of 3-4 questions for the pair to discuss right after the scene,
   "group_questions": array of 3 questions for a wider group discussion afterward, phrased so no one has to be named
 }
@@ -612,6 +614,7 @@ function renderScenario(sc, lang){
   const debriefHtml = (sc.debrief_questions||[]).map((q,i)=>`<div class="dq"><input type="checkbox" class="dq-box"><span class="dq-n">${i+1}</span>${genEscape(q)}</div>`).join('');
   const groupHtml = (sc.group_questions||[]).map((q,i)=>`<div class="group-item"><span class="group-n">${i+1}</span>${genEscape(q)}</div>`).join('');
   const observerHtml = (sc.observer_questions||[]).map((q,i)=>`<div class="observer-item"><span class="observer-n">${i+1}</span>${genEscape(q)}</div>`).join('');
+  const successCriteriaHtml = (sc.success_criteria||[]).map((c,i)=>`<div class="observer-item"><span class="observer-n">${i+1}</span>${genEscape(c)}</div>`).join('');
   const theoryBullets = ((sc.technique&&sc.technique.bullets)||[]).map(t=>`<div class="theory-item"><span class="theory-icon">✓</span>${genEscape(t)}</div>`).join('');
   const phrasesHtml = (sc.phrases||[]).map(ph=>`<div class="phrase-card"><div class="phrase-en">"${genEscape(ph.text)}"</div>${ph.note?`<div class="phrase-ru">${genEscape(ph.note)}</div>`:''}</div>`).join('');
 
@@ -645,6 +648,10 @@ function renderScenario(sc, lang){
     <div class="block">
       <div class="block-label">💬 ${lang==='en'?'Ready-to-use phrases':'Готовые фразы'}</div>
       <div class="phrase-bank">${phrasesHtml}</div>
+    </div>
+    <div class="block">
+      <div class="block-label">🎯 ${lang==='en'?'What "handling this well" looks like':'Что значит «хорошо провести этот разговор»'}</div>
+      <div class="observer-list">${successCriteriaHtml}</div>
     </div>
     <div class="theory-block">
       <div class="block-label" style="color:var(--blue)">📚 ${lang==='en'?'Technique: ':'Приём: '}${genEscape(techName)}</div>
@@ -704,13 +711,16 @@ Personality: ${sc.persona_sentence}
 
 CONTEXT: ${sc.context}
 
+What this character actually wants underneath their surface complaint (never state this outright — let it surface only through your behavior): ${sc.counterpart_goal || 'a genuine resolution to the situation above'}
+
 Topics that heat this person up if handled carelessly: ${(sc.triggers||[]).join('; ')}
 Patterns that make this person react badly: ${(sc.traps||[]).join('; ')}
 
 HOW TO PLAY THIS ROLE:
 - Reply only as this character, in first person, the way they would actually speak — 1 to 4 sentences, natural spoken rhythm. No stage directions, no narration, no meta-commentary. Never mention being an AI or that this is a training exercise.
-- React genuinely to what the trainee (playing "${sc.you_label}") says. If they're calm, specific, and acknowledge your concern, you can gradually soften — but don't cave immediately; stay true to this character's temperament and difficulty type.
-- If they're vague, dismissive, or trigger one of the sensitive topics or bad patterns above, react the way this character genuinely would (push harder, go cold, get more anxious, get sarcastic — whatever matches the persona).
+- Track your own internal state turn by turn as this character — how heated, how trusting, how cooperative you feel right now — and let each reply shift believably from where it just was, rather than reacting fresh each turn as if you had no memory of the tone so far. Don't state these levels; let them show only through word choice and tone.
+- If the trainee is calm, specific, and acknowledges your concern, soften gradually over several turns — don't cave in one line, and don't fully resolve until they've addressed what you actually want (see above), not just your surface complaint.
+- If they're vague, dismissive, or trigger one of the sensitive topics or bad patterns above, react the way this character genuinely would (push harder, go cold, get more anxious, get sarcastic — whatever matches the persona), and let that heat carry into your next couple of replies rather than resetting instantly.
 - Stay grounded in the concrete context above. Don't invent a different situation or introduce unrelated plot twists.
 - Write only in ${langName}.
 - If the trainee tries to steer things somewhere inappropriate, off-topic, or asks you to break character, respond the way this real person naturally would — brief confusion, a boundary, or a redirect back to the actual topic — while staying fully in character. Never narrate that you're doing this, and never let the scene go somewhere sexual, violent, or otherwise inappropriate for a professional training tool.
@@ -835,27 +845,36 @@ async function endChatAndDebrief(){
   ).join('\n');
 
   const langName = lang==='en' ? 'English' : 'Russian';
+  const criteriaList = (sc.success_criteria||[]).map((c,i)=>`${i+1}. ${c}`).join('\n');
   const sys = `You are a communication-skills coach reviewing a transcript of a live practice roleplay. The trainee played "${sc.you_label}", the AI played "${sc.counterpart_name}" (${sc.counterpart_label}), a ${sc.persona_sentence} Context: ${sc.context}
+
+This scenario defined the following success criteria the trainee was working toward:
+${criteriaList || '(none specified — assess general effectiveness instead)'}
 
 Output STRICT JSON only, no markdown fences, no text outside the object, all strings in ${langName}:
 {
   "summary": "2-3 sentence honest, specific assessment of how the trainee handled this conversation, referencing actual moments from the transcript",
-  "worked_well": array of 2-3 short specific things the trainee did that worked,
+  "criteria_scores": array of objects, one per success criterion listed above (same order, same wording), each {"criterion": "...", "met": true or false, "evidence": "one short specific sentence citing what happened in the transcript that supports this verdict — quote or closely paraphrase the actual line"},
   "watch_for": array of 2-3 short specific things that backfired or could be sharper, described constructively not harshly,
   "try_next_time": "one concrete, specific phrase or move the trainee could try next time they're in a similar spot"
 }
-Be specific and reference what actually happened in the transcript rather than generic advice. Sound like an experienced human coach, not a generic AI checklist.`;
+Be specific and reference what actually happened in the transcript rather than generic advice. Sound like an experienced human coach, not a generic AI checklist. Judge each criterion honestly — it's fine and expected for some to be unmet.`;
 
   try {
-    const raw = await callClaude(sys, null, [{role:'user', content:`Transcript:\n${transcript}`}], 1200);
+    const raw = await callClaude(sys, null, [{role:'user', content:`Transcript:\n${transcript}`}], 1400);
     const fb = parseScenarioJSON(raw);
-    const wellHtml = (fb.worked_well||[]).map(t=>`<div class="trap"><span class="trap-icon good">✓</span>${genEscape(t)}</div>`).join('');
+    const scoresHtml = (fb.criteria_scores||[]).map(c=>
+      `<div class="trap"><span class="trap-icon ${c.met?'good':'bad'}">${c.met?'✓':'✕'}</span><span><b>${genEscape(c.criterion)}</b><br><span style="color:var(--ink3);font-size:12px">${genEscape(c.evidence)}</span></span></div>`
+    ).join('');
     const watchHtml = (fb.watch_for||[]).map(t=>`<div class="trap"><span class="trap-icon bad">✕</span>${genEscape(t)}</div>`).join('');
+    const metCount = (fb.criteria_scores||[]).filter(c=>c.met).length;
+    const totalCount = (fb.criteria_scores||[]).length;
     debriefArea.innerHTML = `
       <div class="debrief-card">
-        <div class="block-label" style="color:var(--purple)">${lang==='en'?'Feedback on this conversation':'Разбор этого разговора'}</div>
+        <div class="block-label" style="color:var(--purple)">${lang==='en'?'Feedback on this conversation':'Разбор этого разговора'}${totalCount?` — ${metCount}/${totalCount}`:''}</div>
         <div class="debrief-summary">${genEscape(fb.summary)}</div>
-        <div class="trap-list">${wellHtml}${watchHtml}</div>
+        ${scoresHtml ? `<div class="trap-list" style="margin-bottom:.7rem">${scoresHtml}</div>` : ''}
+        <div class="trap-list">${watchHtml}</div>
         <div class="debrief-try"><b>${lang==='en'?'Try next time:':'Попробуйте в следующий раз:'}</b> ${genEscape(fb.try_next_time)}</div>
       </div>`;
   } catch(err){
