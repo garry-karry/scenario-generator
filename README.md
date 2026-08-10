@@ -7,13 +7,25 @@ src/index.js         ← Worker: раздаёт public/ + обрабатывае
 wrangler.toml        ← связывает их в один деплой
 ```
 
+**Провайдер ИИ: DeepSeek**, не Anthropic/Claude — примерно в 15–20 раз
+дешевле за токен. Важно: это не "бесплатно навсегда" — API платный,
+как и у любого провайдера, просто счёт при том же трафике будет
+расходоваться намного медленнее. При регистрации на platform.deepseek.com
+дают разовый грант 5 млн токенов на 30 дней, дальше — обычный
+pay-as-you-go баланс.
+
 Почему не Pages: Cloudflare сейчас объединяет Pages и Workers. Если
-задеплоить как «чисто статику» (как было раньше через Pages без
-распознанного Worker-скрипта), у проекта не оказывается вычислительного
-слоя — и вкладка Variables/Secrets попросту недоступна («Variables
-cannot be added to a Worker that only has static assets»). Схема ниже —
-это уже настоящий Worker с кодом, поэтому секреты подключаются как
-обычно.
+задеплоить как «чисто статику», у проекта не оказывается вычислительного
+слоя — и вкладка Variables/Secrets попросту недоступна. Схема ниже —
+настоящий Worker с кодом, поэтому секреты подключаются как обычно.
+
+## Ключ DeepSeek
+
+1. Зарегистрируйтесь на [platform.deepseek.com](https://platform.deepseek.com)
+   — это ОТДЕЛЬНЫЙ аккаунт и баланс, не связан с console.anthropic.com.
+2. API Keys → Create API Key → скопируйте (начинается с `sk-...`).
+3. Billing → пополните баланс (карта нужна уже после того, как
+   закончится бесплатный грант).
 
 ## Деплой через CLI (быстрее всего)
 
@@ -22,7 +34,7 @@ cannot be added to a Worker that only has static assets»). Схема ниже 
 ```
 npm install -g wrangler        # если ещё не стоит
 wrangler login                 # один раз, откроет браузер для авторизации
-wrangler secret put ANTHROPIC_API_KEY   # вставит ключ как секрет
+wrangler secret put DEEPSEEK_API_KEY   # вставит ключ как секрет
 wrangler deploy
 ```
 
@@ -37,9 +49,8 @@ wrangler deploy
 2. Cloudflare Dashboard → **Workers & Pages** → **Create** →
    **Workers** (не Pages) → **Connect to Git** → выберите репозиторий.
    Cloudflare увидит `wrangler.toml` и настроится сам.
-3. Settings → **Variables and Secrets** → добавьте `ANTHROPIC_API_KEY`
-   как Secret. Эта вкладка теперь будет доступна, так как проект — уже
-   Worker с кодом, а не чистая статика.
+3. Settings → **Variables and Secrets** → добавьте `DEEPSEEK_API_KEY`
+   как Secret.
 4. Redeploy, если переменная не подхватилась сразу.
 
 ## Свой домен позже
@@ -57,3 +68,13 @@ wrangler deploy
 
 Без этого шага лимит просто не работает — код обрабатывает отсутствие
 KV-биндинга мягко, ничего не ломается.
+
+## Если позже захотите вернуть Claude
+
+Модель, качество текста и то, насколько живо ведёт себя персонаж в
+живом чате — у DeepSeek заметно скромнее, чем у Claude, особенно на
+русском. Если качество окажется недостаточным, откат простой: в
+`src/index.js` заменить блок `fetch("https://api.deepseek.com/...")`
+обратно на `https://api.anthropic.com/v1/messages` (формат запроса
+отличается — system снова отдельным полем, а не сообщением в массиве;
+предыдущая версия файла с Anthropic сохранена в истории git).

@@ -1,6 +1,7 @@
 /**
  * ══════════════════════════════════════════════════════════════════
  *  Worker: раздаёт сайт (public/) + обрабатывает /api/scenario-ai
+ *  Провайдер: DeepSeek (OpenAI-совместимый API), не Anthropic.
  * ══════════════════════════════════════════════════════════════════
  *
  * Это ОДИН Worker с настоящим кодом (не "просто статика"), поэтому
@@ -9,11 +10,13 @@
  *
  * Локально: `npx wrangler dev`
  * Деплой:   `npx wrangler deploy`
- * Секрет:   `npx wrangler secret put ANTHROPIC_API_KEY`
+ * Секрет:   `npx wrangler secret put DEEPSEEK_API_KEY`
+ *           (ключ берётся на platform.deepseek.com — это ОТДЕЛЬНЫЙ
+ *           аккаунт/баланс, не связан с Anthropic/console.anthropic.com)
  * ══════════════════════════════════════════════════════════════════
  */
 
-const SCENARIO_AI_MODEL = "claude-sonnet-5";
+const SCENARIO_AI_MODEL = "deepseek-chat"; // V3.2, без "размышлений" — быстрее и дешевле; deepseek-reasoner для более сложных сценариев
 const DAILY_LIMIT_PER_IP = 40; // подберите под бюджет; работает только если подключён KV (см. wrangler.toml)
 
 export default {
@@ -48,8 +51,8 @@ async function handleScenarioAI(request, env) {
     return json({ error: "messages array is required" }, 400);
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
-    return json({ error: "Server misconfigured: ANTHROPIC_API_KEY is not set" }, 500);
+  if (!env.DEEPSEEK_API_KEY) {
+    return json({ error: "Server misconfigured: DEEPSEEK_API_KEY is not set" }, 500);
   }
 
   if (env.SCENARIO_KV) {
@@ -62,30 +65,38 @@ async function handleScenarioAI(request, env) {
 
   const cappedMaxTokens = Math.min(Number(max_tokens) || 1200, 6000);
 
+  // DeepSeek — OpenAI-совместимый формат: system идёt как ОБЫЧНОЕ сообщение
+  // в начале массива messages (у Anthropic это было отдельное поле "system").
+  const dsMessages = system ? [{ role: "system", content: system }, ...messages] : messages;
+
   try {
-    const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
+    const dsResp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": "Bearer " + env.DEEPSEEK_API_KEY,
       },
       body: JSON.stringify({
         model: SCENARIO_AI_MODEL,
         max_tokens: cappedMaxTokens,
-        system: system || undefined,
-        messages: messages,
+        messages: dsMessages,
+        stream: false,
       }),
     });
 
-    const data = await anthropicResp.json();
-    if (!anthropicResp.ok) {
-      // Anthropic returns { type: 'error', error: { type, message } } — unwrap
-      // so the frontend's data.error.message actually finds the real reason.
+    const data = await dsResp.json();
+
+    if (!dsResp.ok) {
+      // DeepSeek возвращает { error: { message, type, code } }
       const inner = (data && data.error) ? data.error : data;
-      return json({ error: inner }, anthropicResp.status);
+      return json({ error: inner }, dsResp.status);
     }
-    return json(data, 200);
+
+    // Нормализуем OpenAI-формат ответа в тот же вид, что фронтенд уже
+    // умеет разбирать (content: [{type:'text', text: '...'}]), чтобы
+    // не трогать код на странице.
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    return json({ content: [{ type: "text", text }] }, 200);
   } catch (err) {
     return json({ error: "Upstream request failed", detail: String(err) }, 502);
   }
