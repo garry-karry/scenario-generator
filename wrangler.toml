@@ -1,0 +1,14 @@
+name = "scenario-generator"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Раскомментируйте после того, как создадите KV namespace (см. README) —
+# без этого блока лимит запросов в сутки просто не будет применяться,
+# ничего не сломается.
+# [[kv_namespaces]]
+# binding = "SCENARIO_KV"
+# id = "вставьте-id-после-создания-namespace"

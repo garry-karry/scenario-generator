@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Генератор сценариев — Дуэльный клуб</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF4EC;--bg2:#F6EBDC;--bg3:#EFDFC7;
+  --ink:#1C1A16;--ink2:#4A4740;--ink3:#8A8680;
+  --teal:#0A7D5C;--teal-l:#D4F5E8;--teal-m:#9FE1CB;
+  --red:#A32D2D;--red-l:#FCEBEB;
+  --amber:#854F0B;--amber-l:#FAEEDA;
+  --blue:#185FA5;--blue-l:#E6F1FB;
+  --purple:#534AB7;--purple-l:#EEEDFE;
+  --gold:#C8A84B;--gold-l:#FBF0D4;
+  --border:rgba(28,26,22,.12);--border-m:rgba(28,26,22,.22);
+  --r:10px;--r-sm:6px;
+  --grad-teal:linear-gradient(135deg,#0A7D5C 0%,#185FA5 115%);
+  --grad-warm:linear-gradient(120deg,#C8A84B 0%,#A32D2D 130%);
+  --grad-purple:linear-gradient(135deg,#534AB7 0%,#0A7D5C 140%);
+  --ease:cubic-bezier(.25,.8,.35,1);
+  --shadow-lift:0 10px 26px rgba(28,26,22,.10);
+  --shadow-glow-teal:0 6px 20px rgba(10,125,92,.28);
+  --shadow-glow-purple:0 6px 20px rgba(83,74,183,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans',sans-serif;color:var(--ink);min-height:100vh;line-height:1.6;
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(circle at 10% -10%, rgba(200,168,75,.09), transparent 42%),
+    radial-gradient(circle at 105% 8%, rgba(163,90,45,.07), transparent 46%),
+    radial-gradient(circle at 50% 118%, rgba(163,45,45,.05), transparent 55%);
+  background-attachment:fixed;
+}
+main,.site-header,footer{position:relative;z-index:2}
+button{font-family:'DM Sans',sans-serif;transition:transform .15s var(--ease),box-shadow .15s var(--ease),background .15s var(--ease),opacity .15s var(--ease)}
+button:active{transform:scale(.96)}
+
+/* header */
+.site-header{border-bottom:2px solid transparent;border-image:var(--grad-teal) 1;padding:.85rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:rgba(245,242,236,.95);position:sticky;top:0;z-index:200;backdrop-filter:blur(10px)}
+.logo{font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;letter-spacing:-.3px;color:var(--ink)}
+.logo span{background:var(--grad-teal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lang-toggle{display:flex;gap:2px;background:var(--bg2);border-radius:20px;padding:2px;border:1px solid var(--border)}
+.lang-btn{font-size:12px;font-weight:500;padding:4px 11px;border-radius:16px;border:none;background:transparent;color:var(--ink2);cursor:pointer}
+.lang-btn.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+[data-lang="en"] .ru-only{display:none}
+[data-lang="ru"] .en-only{display:none}
+
+main{max-width:800px;margin:0 auto;padding:2.5rem 1.5rem 4rem}
+
+/* intro */
+.intro{margin-bottom:2rem}
+.intro-label{display:inline-block;font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:.85rem;position:relative;transform:rotate(-1.2deg)}
+.intro-label::after{content:"";position:absolute;left:-2px;right:-8px;bottom:-6px;height:2px;border-radius:2px;background:var(--grad-purple)}
+.intro h1{font-family:'Libre Baskerville',serif;font-size:clamp(26px,5vw,40px);font-weight:700;line-height:1.15;letter-spacing:-.6px;margin-bottom:.85rem}
+.grad-text{background:var(--grad-purple);-webkit-background-clip:text;background-clip:text;color:transparent}
+.intro p{font-size:14px;color:var(--ink2);max-width:600px;line-height:1.7;text-align:justify}
+
+/* blocks (shared with generated scenario) */
+.block{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:.85rem}
+.block-label{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:.6rem}
+.block-text{font-size:13.5px;color:var(--ink2);line-height:1.7;text-align:justify}
+.subtitle{font-size:13.5px;color:var(--ink2);line-height:1.65;max-width:680px;text-align:justify;margin-bottom:1.5rem}
+
+/* sphere chips */
+.sphere-grid{display:flex;flex-wrap:wrap;gap:8px}
+.sphere-chip{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:8px 14px;border-radius:24px;border:1.5px solid var(--border-m);background:#fff;color:var(--ink2);cursor:pointer;transition:all .15s}
+.sphere-chip:hover{background:var(--bg2)}
+.sphere-chip.active{background:var(--grad-purple);color:#fff;border-color:transparent;box-shadow:var(--shadow-glow-purple)}
+.sphere-icon{font-size:15px}
+
+/* custom topic */
+.custom-topic-wrap{margin-top:.9rem;display:none}
+.custom-topic-wrap.show{display:block}
+textarea.field-input,input.field-input{width:100%;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r-sm);padding:.65rem .8rem;resize:vertical;line-height:1.55}
+textarea.field-input:focus,input.field-input:focus{outline:none;border-color:var(--purple)}
+.field-hint{font-size:11.5px;color:var(--ink3);margin-top:.4rem;line-height:1.5}
+
+/* gen fields */
+.gen-field{margin-bottom:1.1rem}
+.gen-field:last-child{margin-bottom:0}
+.gen-field-label{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:.5rem}
+.gen-pills{display:flex;flex-wrap:wrap;gap:6px}
+.gen-pill{font-size:12px;font-weight:500;padding:6px 13px;border-radius:20px;border:1.5px solid var(--border-m);background:#fff;color:var(--ink2);cursor:pointer;transition:all .15s}
+.gen-pill:hover{background:var(--bg2)}
+.gen-pill.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+
+.gen-generate-row{margin-top:1.4rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.gen-generate-btn{font-size:14px;font-weight:500;padding:11px 22px;border-radius:24px;border:none;background:var(--grad-purple);color:#fff;cursor:pointer;box-shadow:var(--shadow-glow-purple)}
+.gen-generate-btn:hover:not(:disabled){opacity:.88}
+.gen-generate-btn:disabled{opacity:.55;cursor:default}
+.gen-generate-note{font-size:11.5px;color:var(--ink3)}
+.spinner{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error-block{background:var(--red-l);border:1px solid rgba(163,45,45,.3);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:.85rem;font-size:13px;color:var(--red);line-height:1.6}
+
+/* history strip */
+.history-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.5rem}
+.history-chip{font-size:11.5px;font-weight:500;padding:5px 12px;border-radius:16px;background:var(--bg2);color:var(--ink2);border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.history-chip:hover{background:var(--bg3)}
+.history-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* scenario result */
+.sc-difficulty{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:3px 11px;border-radius:20px;margin-bottom:.85rem;background:var(--purple-l);color:var(--purple)}
+.gen-persona{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.gen-persona-av{width:44px;height:44px;border-radius:50%;background:var(--grad-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;box-shadow:0 4px 14px rgba(83,74,183,.3)}
+.gen-persona-name{font-family:'Libre Baskerville',serif;font-size:17px;font-weight:700;color:var(--ink)}
+.gen-persona-role{font-size:12px;color:var(--ink3)}
+.gen-persona-sentence{font-size:13px;color:var(--ink2);line-height:1.7;margin-top:2px;text-align:justify}
+
+.char-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:.35rem}
+.char-tag{font-size:11px;padding:2px 8px;border-radius:12px;background:var(--bg2);color:var(--ink2)}
+.char-tag.red{background:var(--red-l);color:var(--red)}
+
+.trap-list{display:flex;flex-direction:column;gap:7px}
+.trap{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink2);line-height:1.6;text-align:justify}
+.trap-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px;font-weight:700}
+.trap-icon.bad{background:var(--red-l);color:var(--red)}
+.trap-icon.good{background:var(--teal-l);color:var(--teal)}
+
+.phrase-bank{display:flex;flex-direction:column;gap:8px}
+.phrase-card{background:#fff;border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:.6rem .9rem}
+.phrase-en{font-size:13.5px;color:var(--ink);font-style:italic;line-height:1.5}
+.phrase-ru{font-size:11.5px;color:var(--ink3);margin-top:3px;font-style:normal}
+
+.technique-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;background:var(--blue-l);color:var(--blue);border:1px solid rgba(24,95,165,.3);margin-bottom:.75rem}
+.theory-block{background:var(--blue-l);border:1px solid rgba(24,95,165,.25);border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:.85rem}
+.theory-def{font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:.7rem;padding-bottom:.7rem;border-bottom:1px solid rgba(24,95,165,.15);text-align:justify}
+.theory-def b{color:var(--blue)}
+.theory-list{display:flex;flex-direction:column;gap:9px;margin-top:.7rem}
+.theory-item{display:flex;gap:9px;font-size:13px;color:var(--ink2);line-height:1.65;text-align:justify}
+.theory-icon{color:var(--blue);flex-shrink:0;font-weight:700}
+.theory-source{font-size:11px;color:var(--ink3);margin-top:.8rem;font-style:italic;border-top:1px solid rgba(24,95,165,.15);padding-top:.6rem}
+
+.observer-block{background:var(--gold-l);border:1px solid rgba(200,168,75,.4);border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:.85rem}
+.observer-list{display:flex;flex-direction:column;gap:8px;margin-top:.6rem}
+.observer-item{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink2);line-height:1.6;text-align:justify}
+.observer-n{min-width:22px;height:22px;border-radius:50%;background:#fff;color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px;border:1px solid rgba(200,168,75,.4)}
+
+.flow-note{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-bottom:.85rem;font-style:italic;text-align:justify}
+
+.accordion{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:.85rem}
+.accordion-trigger{width:100%;background:#fff;border:none;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:12px;text-align:left;transition:background .25s var(--ease)}
+.accordion-trigger:hover{background:var(--bg2)}
+.accordion-trigger.open{background:var(--grad-purple);color:#fff}
+.trigger-left{display:flex;align-items:center;gap:11px}
+.trigger-icon{width:26px;height:26px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.accordion-trigger.open .trigger-icon{background:rgba(255,255,255,.15)}
+.trigger-label{font-size:13.5px;font-weight:500;color:inherit}
+.trigger-sub{font-size:11.5px;color:var(--ink3);margin-top:1px}
+.accordion-trigger.open .trigger-sub{color:rgba(255,255,255,.55)}
+.chevron{font-size:16px;color:var(--ink3);transition:transform .25s;line-height:1;flex-shrink:0}
+.accordion-trigger.open .chevron{transform:rotate(180deg);color:rgba(255,255,255,.6)}
+.accordion-body{display:none;background:#fff;border-top:1px solid var(--border)}
+.accordion-body.open{display:block}
+.script-inner{padding:1rem 1.25rem}
+
+.script-line{display:flex;gap:10px;padding:.65rem 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.script-line:last-child{border-bottom:none;padding-bottom:0}
+.who{min-width:76px;font-size:10.5px;font-weight:500;padding:3px 7px;border-radius:20px;text-align:center;flex-shrink:0;margin-top:2px}
+.who.cl{background:var(--red-l);color:var(--red)}
+.who.cs{background:var(--teal-l);color:var(--teal)}
+.who.note{background:var(--bg2);color:var(--ink3)}
+.line-text{font-size:13px;color:var(--ink);line-height:1.65}
+
+.debrief-list{display:flex;flex-direction:column;gap:7px}
+.dq{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink2);line-height:1.6;text-align:justify}
+.dq-box{width:16px;height:16px;margin-top:3px;flex-shrink:0;cursor:pointer;accent-color:var(--purple)}
+.dq-n{min-width:22px;height:22px;border-radius:50%;background:var(--bg2);color:var(--ink2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px;border:1px solid var(--border)}
+
+.group-discuss-block{background:var(--gold-l);border:1px solid rgba(200,168,75,.35);border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:.85rem}
+.group-list{display:flex;flex-direction:column;gap:8px}
+.group-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink2);line-height:1.6;text-align:justify}
+.group-n{min-width:22px;height:22px;border-radius:50%;background:#fff;color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px;border:1px solid rgba(200,168,75,.4)}
+
+footer{padding:2rem 1.5rem 0;text-align:center}
+.footer-note{font-size:11px;color:var(--ink3);max-width:520px;margin:0 auto;line-height:1.6}
+
+/* ── LIVE PRACTICE ── */
+.live-block{background:var(--purple-l);border:1px solid rgba(83,74,183,.3);border-radius:var(--r);padding:1.1rem 1.3rem;margin-bottom:.85rem}
+.live-block-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.live-desc{font-size:13px;color:var(--ink2);line-height:1.6;text-align:justify;max-width:520px}
+.live-start-btn{font-size:13px;font-weight:500;padding:9px 18px;border-radius:20px;border:none;background:var(--grad-purple);color:#fff;cursor:pointer;box-shadow:var(--shadow-glow-purple);white-space:nowrap;flex-shrink:0}
+.live-start-btn:hover:not(:disabled){opacity:.88}
+.live-start-btn:disabled{opacity:.55;cursor:default}
+
+.chat-wrap{margin-top:1rem;background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:10px;padding:.7rem 1rem;border-bottom:1px solid var(--border);background:var(--bg)}
+.chat-head-av{width:32px;height:32px;border-radius:50%;background:var(--grad-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.chat-head-name{font-size:13px;font-weight:500;color:var(--ink)}
+.chat-head-role{font-size:11px;color:var(--ink3)}
+.chat-messages{display:flex;flex-direction:column;gap:10px;padding:1rem;max-height:420px;overflow-y:auto}
+.chat-bubble{max-width:78%;padding:.55rem .8rem;border-radius:14px;font-size:13px;line-height:1.55;text-align:left}
+.chat-bubble.counterpart{align-self:flex-start;background:var(--bg2);color:var(--ink);border-bottom-left-radius:4px}
+.chat-bubble.you{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+.chat-bubble.typing{display:flex;gap:4px;align-items:center;padding:.7rem .9rem}
+.chat-dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);animation:chatDot 1.1s ease-in-out infinite}
+.chat-dot:nth-child(2){animation-delay:.15s}
+.chat-dot:nth-child(3){animation-delay:.3s}
+@keyframes chatDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}
+.chat-input-row{display:flex;gap:8px;padding:.8rem 1rem;border-top:1px solid var(--border)}
+.chat-input{flex:1;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:20px;padding:.55rem 1rem;resize:none;line-height:1.5;max-height:90px}
+.chat-input:focus{outline:none;border-color:var(--purple)}
+.chat-send-btn{font-size:13px;font-weight:500;padding:0 18px;border-radius:20px;border:none;background:var(--purple);color:#fff;cursor:pointer;flex-shrink:0}
+.chat-send-btn:hover:not(:disabled){opacity:.85}
+.chat-send-btn:disabled{opacity:.5;cursor:default}
+.chat-footer-row{display:flex;gap:8px;padding:.6rem 1rem 1rem;flex-wrap:wrap}
+.chat-mini-btn{font-size:12px;font-weight:500;padding:6px 13px;border-radius:16px;border:1.5px solid var(--border-m);background:#fff;color:var(--ink2);cursor:pointer}
+.chat-mini-btn:hover:not(:disabled){background:var(--bg2)}
+.chat-mini-btn:disabled{opacity:.5;cursor:default}
+.chat-mini-btn.end{border-color:var(--purple);color:var(--purple)}
+
+.debrief-card{background:#fff;border:1px solid var(--border);border-top:none;padding:1rem 1.25rem;border-radius:0 0 var(--r) var(--r)}
+.debrief-summary{font-size:13px;color:var(--ink2);line-height:1.7;text-align:justify;margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:1px solid var(--border)}
+.debrief-try{background:var(--gold-l);border:1px solid rgba(200,168,75,.4);border-radius:var(--r-sm);padding:.7rem .9rem;font-size:13px;color:var(--ink2);line-height:1.6;margin-top:.7rem;text-align:justify}
+.debrief-try b{color:var(--amber)}
+</style>
+</head>
+<body data-lang="ru">
+
+<header class="site-header">
+  <div class="logo">Дуэльный клуб<span> · </span><span class="ru-only">Генератор</span><span class="en-only">Generator</span></div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="langRuBtn" onclick="setLang('ru',this)">RU</button>
+    <button class="lang-btn" id="langEnBtn" onclick="setLang('en',this)">EN</button>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <div class="intro-label"><span class="ru-only">Генератор сценариев</span><span class="en-only">Scenario generator</span></div>
+    <h1><span class="ru-only">Сценарий на <span class="grad-text">любую тему</span></span><span class="en-only">A scenario for <span class="grad-text">any topic</span></span></h1>
+    <p><span class="ru-only">Выберите сферу жизни или впишите свою тему — Claude соберёт разговорный сценарий для тренировки в паре: контекст, персонажа, приём для разбора и опорный скрипт диалога, в том же формате, что и в дуэльном клубе.</span><span class="en-only">Pick a life sphere or type your own topic — Claude will build a two-person practice scenario: context, character, a technique to debrief, and a reference dialogue script, in the same format as the duel club.</span></p>
+  </div>
+
+  <div class="block">
+    <div class="block-label"><span class="ru-only">Сфера темы</span><span class="en-only">Topic sphere</span></div>
+    <div class="sphere-grid" id="sphereGrid"></div>
+    <div class="custom-topic-wrap" id="customTopicWrap">
+      <textarea class="field-input" id="customTopicInput" rows="2" placeholder=""></textarea>
+    </div>
+    <div class="field-hint" id="refineHintWrap">
+      <span class="ru-only">Необязательно — уточните ситуацию своими словами (например: «партнёр постоянно отменяет планы в последний момент» или «сосед жалуется на шум, хотя мы почти не шумим»).</span>
+      <span class="en-only">Optional — describe the situation in your own words (e.g. "partner keeps cancelling plans last-minute" or "neighbor complains about noise we barely make").</span>
+    </div>
+    <div style="margin-top:.6rem" id="refineInputWrap">
+      <textarea class="field-input" id="refineInput" rows="2" placeholder=""></textarea>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-label"><span class="ru-only">Параметры собеседника</span><span class="en-only">Counterpart parameters</span></div>
+
+    <div class="gen-field">
+      <div class="gen-field-label"><span class="ru-only">Характер</span><span class="en-only">Character</span></div>
+      <div class="gen-pills" data-field="character">
+        <button class="gen-pill active" data-value="direct" onclick="genSetField('character','direct',this)"><span class="ru-only">Прямолинейный</span><span class="en-only">Direct</span></button>
+        <button class="gen-pill" data-value="diplomatic" onclick="genSetField('character','diplomatic',this)"><span class="ru-only">Дипломатичный</span><span class="en-only">Diplomatic</span></button>
+        <button class="gen-pill" data-value="distrustful" onclick="genSetField('character','distrustful',this)"><span class="ru-only">Недоверчивый</span><span class="en-only">Distrustful</span></button>
+        <button class="gen-pill" data-value="anxious" onclick="genSetField('character','anxious',this)"><span class="ru-only">Тревожный</span><span class="en-only">Anxious</span></button>
+        <button class="gen-pill" data-value="demanding" onclick="genSetField('character','demanding',this)"><span class="ru-only">Требовательный</span><span class="en-only">Demanding</span></button>
+      </div>
+    </div>
+
+    <div class="gen-field">
+      <div class="gen-field-label"><span class="ru-only">Темперамент</span><span class="en-only">Temperament</span></div>
+      <div class="gen-pills" data-field="temperament">
+        <button class="gen-pill" data-value="explosive" onclick="genSetField('temperament','explosive',this)"><span class="ru-only">Взрывной</span><span class="en-only">Explosive</span></button>
+        <button class="gen-pill active" data-value="calm" onclick="genSetField('temperament','calm',this)"><span class="ru-only">Спокойный, но настойчивый</span><span class="en-only">Calm but persistent</span></button>
+        <button class="gen-pill" data-value="nervous" onclick="genSetField('temperament','nervous',this)"><span class="ru-only">Нервный</span><span class="en-only">Nervous</span></button>
+        <button class="gen-pill" data-value="cold" onclick="genSetField('temperament','cold',this)"><span class="ru-only">Холодный и отстранённый</span><span class="en-only">Cold and detached</span></button>
+      </div>
+    </div>
+
+    <div class="gen-field">
+      <div class="gen-field-label"><span class="ru-only">Тип сложности</span><span class="en-only">Difficulty type</span></div>
+      <div class="gen-pills" data-field="difficulty">
+        <button class="gen-pill" data-value="none" onclick="genSetField('difficulty','none',this)"><span class="ru-only">Просто сложный, без токсичности</span><span class="en-only">Tough, not toxic</span></button>
+        <button class="gen-pill active" data-value="aggressor" onclick="genSetField('difficulty','aggressor',this)"><span class="ru-only">Агрессор</span><span class="en-only">Aggressor</span></button>
+        <button class="gen-pill" data-value="manipulator" onclick="genSetField('difficulty','manipulator',this)"><span class="ru-only">Манипулятор</span><span class="en-only">Manipulator</span></button>
+        <button class="gen-pill" data-value="chaotic" onclick="genSetField('difficulty','chaotic',this)"><span class="ru-only">Хаотик</span><span class="en-only">Chaotic</span></button>
+        <button class="gen-pill" data-value="passive_aggressive" onclick="genSetField('difficulty','passive_aggressive',this)"><span class="ru-only">Пассивно-агрессивный</span><span class="en-only">Passive-aggressive</span></button>
+        <button class="gen-pill" data-value="silent_bomb" onclick="genSetField('difficulty','silent_bomb',this)"><span class="ru-only">Молчун-бомба</span><span class="en-only">Silent bomb</span></button>
+      </div>
+    </div>
+
+    <div class="gen-field">
+      <div class="gen-field-label"><span class="ru-only">Стиль общения</span><span class="en-only">Communication style</span></div>
+      <div class="gen-pills" data-field="commStyle">
+        <button class="gen-pill active" data-value="blunt" onclick="genSetField('commStyle','blunt',this)"><span class="ru-only">Прямой, без сглаживаний</span><span class="en-only">Blunt</span></button>
+        <button class="gen-pill" data-value="passive_aggressive" onclick="genSetField('commStyle','passive_aggressive',this)"><span class="ru-only">Пассивно-агрессивный</span><span class="en-only">Passive-aggressive</span></button>
+        <button class="gen-pill" data-value="analytical" onclick="genSetField('commStyle','analytical',this)"><span class="ru-only">Аналитический</span><span class="en-only">Analytical</span></button>
+        <button class="gen-pill" data-value="emotional" onclick="genSetField('commStyle','emotional',this)"><span class="ru-only">Эмоциональный</span><span class="en-only">Emotional</span></button>
+        <button class="gen-pill" data-value="formal" onclick="genSetField('commStyle','formal',this)"><span class="ru-only">Формальный</span><span class="en-only">Formal</span></button>
+      </div>
+    </div>
+
+    <div class="gen-field">
+      <div class="gen-field-label"><span class="ru-only">Накал сцены</span><span class="en-only">Scene intensity</span></div>
+      <div class="gen-pills" data-field="intensity">
+        <button class="gen-pill" data-value="warmup" onclick="genSetField('intensity','warmup',this)"><span class="ru-only">Разминка</span><span class="en-only">Warm-up</span></button>
+        <button class="gen-pill active" data-value="standard" onclick="genSetField('intensity','standard',this)"><span class="ru-only">Стандартный</span><span class="en-only">Standard</span></button>
+        <button class="gen-pill" data-value="high" onclick="genSetField('intensity','high',this)"><span class="ru-only">Острый конфликт</span><span class="en-only">Sharp conflict</span></button>
+      </div>
+    </div>
+
+    <div class="gen-generate-row">
+      <button class="gen-generate-btn" id="generateBtn" onclick="genGenerate()">
+        🎲 <span class="ru-only">Сгенерировать сценарий</span><span class="en-only">Generate a scenario</span>
+      </button>
+      <span class="gen-generate-note"><span class="ru-only">Можно нажимать сколько угодно раз — тем не ограничено</span><span class="en-only">Click as many times as you like — topics are unlimited</span></span>
+    </div>
+  </div>
+
+  <div id="errorBox"></div>
+  <div class="history-strip" id="historyStrip"></div>
+  <div id="genResult"></div>
+
+  <footer>
+    <div class="footer-note"><span class="ru-only">Каждый сценарий генерируется заново под выбранные параметры — сохраните текст, если он нужен вам для занятия, история хранится только в текущей сессии.</span><span class="en-only">Every scenario is generated fresh for the chosen parameters — save the text if you need it for a session, history is kept only for the current browser session.</span></div>
+  </footer>
+</main>
+
+<script>
+/* ───────────────────────── STATE ───────────────────────── */
+const SPHERES = [
+  {id:'relationships', icon:'❤️', ru:'Отношения', en:'Relationships'},
+  {id:'work', icon:'💼', ru:'Работа', en:'Work'},
+  {id:'study', icon:'🎓', ru:'Учёба', en:'Study'},
+  {id:'business', icon:'📈', ru:'Бизнес', en:'Business'},
+  {id:'hobby', icon:'🎨', ru:'Хобби', en:'Hobby'},
+  {id:'friendship', icon:'🤝', ru:'Дружба', en:'Friendship'},
+  {id:'team', icon:'👥', ru:'Команда / коллектив', en:'Team'},
+  {id:'custom', icon:'✏️', ru:'Своя тема', en:'Custom topic'}
+];
+
+const LABELS = {
+  character:{direct:{ru:'прямолинейный',en:'direct'},diplomatic:{ru:'дипломатичный',en:'diplomatic'},distrustful:{ru:'недоверчивый',en:'distrustful'},anxious:{ru:'тревожный',en:'anxious'},demanding:{ru:'требовательный',en:'demanding'}},
+  temperament:{explosive:{ru:'взрывной',en:'explosive'},calm:{ru:'спокойный, но настойчивый',en:'calm but persistent'},nervous:{ru:'нервный',en:'nervous'},cold:{ru:'холодный и отстранённый',en:'cold and detached'}},
+  difficulty:{none:{ru:'без токсичности, просто сложный собеседник',en:'not toxic, just a tough counterpart'},aggressor:{ru:'агрессор — давит, повышает голос, обвиняет',en:'aggressor — pushes, raises voice, blames'},manipulator:{ru:'манипулятор — играет на вине, чувстве долга, сравнениях',en:'manipulator — plays on guilt, obligation, comparisons'},chaotic:{ru:'хаотик — перескакивает с темы на тему, противоречит себе',en:'chaotic — jumps topics, contradicts self'},passive_aggressive:{ru:'пассивно-агрессивный — саркастичен, недоговаривает, обижается молча',en:'passive-aggressive — sarcastic, withholds, silently resentful'},silent_bomb:{ru:'молчун-бомба — долго терпит, потом взрывается',en:'silent bomb — holds it in, then explodes'}},
+  commStyle:{blunt:{ru:'прямой, без сглаживаний',en:'blunt, no sugar-coating'},passive_aggressive:{ru:'пассивно-агрессивный',en:'passive-aggressive'},analytical:{ru:'аналитический',en:'analytical'},emotional:{ru:'эмоциональный',en:'emotional'},formal:{ru:'формальный',en:'formal'}},
+  intensity:{warmup:{ru:'разминка — низкий накал, безопасная тема',en:'warm-up — low stakes, safe topic'},standard:{ru:'стандартный накал — реальный, но управляемый конфликт',en:'standard — a real but manageable conflict'},high:{ru:'острый конфликт — высокое напряжение, тема задевает за живое',en:'sharp conflict — high tension, a topic that really stings'}}
+};
+
+let genFields = {sphere:'relationships', character:'direct', temperament:'calm', difficulty:'aggressor', commStyle:'blunt', intensity:'standard'};
+let genHistory = []; // {id, sphereLabel, name, scenario}
+let genActiveHistoryId = null;
+
+/* live chat state — one active session at a time */
+let chatState = { scenario:null, lang:'ru', apiMessages:[], visibleMessages:[], busy:false, ended:false };
+
+/* ───────────────────────── LANG ───────────────────────── */
+function setLang(lang, btn){
+  document.body.dataset.lang = lang;
+  document.getElementById('langRuBtn').classList.toggle('active', lang==='ru');
+  document.getElementById('langEnBtn').classList.toggle('active', lang==='en');
+  renderSphereGrid();
+  updatePlaceholders();
+}
+
+function updatePlaceholders(){
+  const lang = document.body.dataset.lang;
+  document.getElementById('customTopicInput').placeholder = lang==='en'
+    ? 'e.g. "my roommate never does the dishes and gets defensive when I bring it up"'
+    : 'например: «сосед по квартире никогда не моет посуду и защищается, когда я об этом говорю»';
+  document.getElementById('refineInput').placeholder = lang==='en' ? 'Add detail (optional)' : 'Уточнение (необязательно)';
+}
+
+/* ───────────────────────── SPHERE GRID ───────────────────────── */
+function renderSphereGrid(){
+  const lang = document.body.dataset.lang;
+  const grid = document.getElementById('sphereGrid');
+  grid.innerHTML = SPHERES.map(s=>`<button class="sphere-chip ${genFields.sphere===s.id?'active':''}" onclick="setSphere('${s.id}', this)"><span class="sphere-icon">${s.icon}</span>${s[lang]}</button>`).join('');
+  document.getElementById('customTopicWrap').classList.toggle('show', genFields.sphere==='custom');
+}
+function setSphere(id, btn){
+  genFields.sphere = id;
+  document.querySelectorAll('.sphere-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('customTopicWrap').classList.toggle('show', id==='custom');
+}
+
+/* ───────────────────────── GEN FIELDS ───────────────────────── */
+function genSetField(field, value, btn){
+  genFields[field] = value;
+  const group = btn.closest('.gen-pills');
+  group.querySelectorAll('.gen-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function genEscape(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+/* ───────────────────────── PROMPT BUILDING ───────────────────────── */
+function buildUserPrompt(lang){
+  const sphereObj = SPHERES.find(s=>s.id===genFields.sphere);
+  const sphereLabel = lang==='en' ? sphereObj.en : sphereObj.ru;
+  const customTopic = document.getElementById('customTopicInput').value.trim();
+  const refine = document.getElementById('refineInput').value.trim();
+
+  let topicLine;
+  if (genFields.sphere === 'custom' && customTopic) {
+    topicLine = lang==='en' ? `Custom topic (chosen by the user, base everything on this): ${customTopic}` : `Своя тема (выбрана пользователем, строй сценарий на её основе): ${customTopic}`;
+  } else {
+    topicLine = lang==='en' ? `Life sphere: ${sphereLabel}` : `Сфера жизни: ${sphereLabel}`;
+  }
+  if (refine) {
+    topicLine += lang==='en' ? `\nAdditional detail from the user: ${refine}` : `\nДополнительное уточнение от пользователя: ${refine}`;
+  }
+
+  const p = genFields;
+  const paramLines = lang==='en'
+    ? [
+        `Character: ${LABELS.character[p.character].en}`,
+        `Temperament: ${LABELS.temperament[p.temperament].en}`,
+        `Difficulty type: ${LABELS.difficulty[p.difficulty].en}`,
+        `Communication style: ${LABELS.commStyle[p.commStyle].en}`,
+        `Scene intensity: ${LABELS.intensity[p.intensity].en}`
+      ]
+    : [
+        `Характер: ${LABELS.character[p.character].ru}`,
+        `Темперамент: ${LABELS.temperament[p.temperament].ru}`,
+        `Тип сложности: ${LABELS.difficulty[p.difficulty].ru}`,
+        `Стиль общения: ${LABELS.commStyle[p.commStyle].ru}`,
+        `Накал сцены: ${LABELS.intensity[p.intensity].ru}`
+      ];
+
+  return `${topicLine}\n\n${lang==='en' ? 'Counterpart parameters:' : 'Параметры собеседника:'}\n${paramLines.join('\n')}`;
+}
+
+function systemPrompt(lang){
+  const langName = lang==='en' ? 'English' : 'Russian';
+  return `You write two-person practice scenarios for a "duel club" — a communication-skills training exercise where adult professionals pair up, act out a short realistic dialogue (one plays "you", the other plays a difficult counterpart), then debrief using a checklist. This is a generalized version covering any life sphere (relationships, work, study, business, hobbies, friendship, team dynamics, or a custom topic), always between two adults.
+
+Output STRICT JSON only. No markdown code fences, no commentary before or after, no text outside the single JSON object. Every string value must be written entirely in ${langName}.
+
+Schema (all fields required):
+{
+  "you_label": short label for the practicing role, e.g. "Ты" / "You", or a concrete role like "Менеджер" if the sphere implies one,
+  "counterpart_label": short label for the counterpart's role, e.g. "Партнёр", "Коллега", "Сосед", "Друг",
+  "counterpart_name": a realistic first name for the counterpart, matching a name common in ${langName==='Russian'?'Russia/CIS':'the US or UK'},
+  "persona_sentence": 1-2 sentences describing this specific person's character, temperament and communication style in flowing prose (not a list), grounded in the requested parameters,
+  "context": 2-4 sentences of concrete situational context — who these two people are to each other, what led to this conversation, what's at stake. Be specific (names, timeframes, small real details), not generic.,
+  "triggers": array of 3-5 short trigger phrases/topics that will heat up the conversation if touched carelessly,
+  "traps": array of 2-3 short phrases describing what people usually try that backfires in this situation,
+  "tools": array of 2-3 short phrases describing an approach that actually works,
+  "technique": {
+    "name": name of one real communication/psychology technique relevant here (e.g. active listening, DESC scripting, I-statements, the broken record technique, non-violent communication, fogging, boundary-setting, Gottman repair attempts — pick what actually fits),
+    "definition": 1-2 sentence plain-language definition,
+    "bullets": array of 3-4 short concrete bullets on how to apply it in THIS scenario,
+    "source": a short attribution note, e.g. "По мотивам практики ННО (Розенберг) и переговорной теории (Фишер и Юри)." — general, not inventing fake citations
+  },
+  "observer_questions": array of 3 short questions for a third person watching the roleplay to track,
+  "script": array of 10-14 objects {"who": "you" or "counterpart", "text": "..."} — a realistic alternating dialogue with natural rhythm, real tension appropriate to the requested intensity, concrete details from the context, not generic. The final one or two lines should show a constructive move by "you" (using the technique), not necessarily full resolution.,
+  "key_note": 1 sentence — the single most important takeaway from the reference script,
+  "phrases": array of 4-6 objects {"text": a ready-to-use phrase in ${langName} that "you" could say in a real version of this conversation, "note": a very short (under 10 words) note on when/why to use it},
+  "debrief_questions": array of 3-4 questions for the pair to discuss right after the scene,
+  "group_questions": array of 3 questions for a wider group discussion afterward, phrased so no one has to be named
+}
+
+Style rules:
+- Write like an experienced human training designer who has actually run these sessions — natural, concrete, specific. Never sound like a generic AI-generated list of platitudes.
+- Ground everything in believable, small, specific details (names, numbers, a specific object or event) rather than vague generalities like "communication issues" or "misunderstanding".
+- The counterpart should be textured and human, not a cartoon villain — someone a trainee could genuinely feel for even while finding them difficult, matching the requested difficulty type honestly.
+- Never use real, named public figures.
+- Keep everything appropriate for adult professional training: no sexual or romantic content beyond ordinary adult relationship communication (e.g. disagreements, boundaries, plans) — never anything explicit. If the sphere is "study", assume adult learners (university, professional courses, adult continuing education), not children. No graphic violence, no content that could function as a real harassment or manipulation script outside the training context.
+- The script must be genuinely useful as a reference: it should model the technique being taught, not just illustrate the conflict.`;
+}
+
+/* ───────────────────────── API CALL ───────────────────────── */
+/* ───────────────────────── API CALL ─────────────────────────
+   Идёт на ваш собственный Cloudflare Worker (см. worker-scenario-ai-route.js),
+   который прячет ANTHROPIC_API_KEY и проксирует запрос на api.anthropic.com.
+   Поменяйте SCENARIO_AI_ENDPOINT, если маршрут в вашем worker.js называется иначе. */
+const SCENARIO_AI_ENDPOINT = '/api/scenario-ai';
+
+async function callClaude(system, userPrompt, messagesOverride, maxTokens){
+  const messages = messagesOverride || [{ role: "user", content: userPrompt }];
+  const response = await fetch(SCENARIO_AI_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      max_tokens: maxTokens || 1200,
+      system: system,
+      messages: messages
+    })
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch(e) {
+    throw new Error("API returned a non-JSON response (HTTP " + response.status + ")");
+  }
+  if (!response.ok) {
+    const msg = (data && data.error && data.error.message) ? data.error.message : ("HTTP " + response.status);
+    throw new Error("API request failed: " + msg);
+  }
+  if (data.error) {
+    throw new Error("API error: " + (data.error.message || JSON.stringify(data.error)));
+  }
+  const text = (data.content || []).map(b => b.text || "").join("");
+  if (!text) {
+    console.warn("Empty text in API response:", data);
+    throw new Error("API returned no text content (possibly hit max_tokens before generating any output, or was stopped for another reason: " + (data.stop_reason || 'unknown') + ")");
+  }
+  return text;
+}
+
+function parseScenarioJSON(text){
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/,'').replace(/```\s*$/,'');
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1) {
+    console.error("Could not find JSON in model output. Raw text was:", text);
+    throw new Error('No JSON object found in response — see console for the raw model output');
+  }
+  cleaned = cleaned.slice(start, end+1);
+  try {
+    return JSON.parse(cleaned);
+  } catch(e) {
+    console.error("JSON.parse failed. Attempted to parse:", cleaned);
+    throw new Error('The model output was not valid JSON (likely truncated) — see console for details');
+  }
+}
+
+/* ───────────────────────── GENERATE ───────────────────────── */
+async function genGenerate(){
+  const lang = document.body.dataset.lang === 'en' ? 'en' : 'ru';
+  const btn = document.getElementById('generateBtn');
+  const errorBox = document.getElementById('errorBox');
+  errorBox.innerHTML = '';
+
+  if (genFields.sphere === 'custom' && !document.getElementById('customTopicInput').value.trim()) {
+    errorBox.innerHTML = `<div class="error-block">${lang==='en' ? 'Please describe your custom topic first.' : 'Сначала опишите свою тему.'}</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span>${lang==='en' ? 'Generating…' : 'Генерируем…'}`;
+
+  try {
+    const sys = systemPrompt(lang);
+    const userPrompt = buildUserPrompt(lang);
+    const raw = await callClaude(sys, userPrompt, null, 4000);
+    const scenario = parseScenarioJSON(raw);
+    renderScenario(scenario, lang);
+
+    const sphereObj = SPHERES.find(s=>s.id===genFields.sphere);
+    const histLabel = genFields.sphere==='custom'
+      ? (document.getElementById('customTopicInput').value.trim().slice(0,28) + '…')
+      : (lang==='en' ? sphereObj.en : sphereObj.ru);
+    const id = 'h'+Date.now();
+    genHistory.unshift({ id, label: histLabel, scenario, lang });
+    if (genHistory.length > 8) genHistory.pop();
+    genActiveHistoryId = id;
+    renderHistoryStrip(lang);
+  } catch (err) {
+    console.error(err);
+    errorBox.innerHTML = `<div class="error-block">${lang==='en' ? 'Something went wrong generating the scenario. Please try again.' : 'Не удалось сгенерировать сценарий. Попробуйте ещё раз.'}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
+function renderHistoryStrip(lang){
+  const strip = document.getElementById('historyStrip');
+  strip.innerHTML = genHistory.map(h =>
+    `<button class="history-chip ${h.id===genActiveHistoryId?'active':''}" onclick="showHistoryItem('${h.id}')">${genEscape(h.label)}</button>`
+  ).join('');
+}
+
+function showHistoryItem(id){
+  const item = genHistory.find(h=>h.id===id);
+  if (!item) return;
+  genActiveHistoryId = id;
+  renderScenario(item.scenario, item.lang);
+  renderHistoryStrip(item.lang);
+  document.getElementById('genResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ───────────────────────── RENDER SCENARIO ───────────────────────── */
+function toggleAccordion(btn){
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+
+let currentRenderedScenario = null;
+let currentRenderedLang = 'ru';
+
+function renderScenario(sc, lang){
+  currentRenderedScenario = sc;
+  currentRenderedLang = lang;
+  chatState = { scenario:null, lang:'ru', apiMessages:[], visibleMessages:[], busy:false, ended:false };
+  const avatar = (sc.counterpart_name || '??').slice(0,2).toUpperCase();
+
+  const triggersHtml = (sc.triggers||[]).map(t=>`<span class="char-tag red">${genEscape(t)}</span>`).join('');
+  const trapsHtml = (sc.traps||[]).map(t=>`<div class="trap"><span class="trap-icon bad">✕</span>${genEscape(t)}</div>`).join('');
+  const toolsHtml = (sc.tools||[]).map(t=>`<div class="trap"><span class="trap-icon good">✓</span>${genEscape(t)}</div>`).join('');
+  const scriptHtml = (sc.script||[]).map(line=>{
+    const whoLbl = line.who==='counterpart' ? (sc.counterpart_label||'') : (sc.you_label||'');
+    const whoCls = line.who==='counterpart' ? 'cl' : 'cs';
+    return `<div class="script-line"><span class="who ${whoCls}">${genEscape(whoLbl)}</span><span class="line-text">${genEscape(line.text)}</span></div>`;
+  }).join('');
+  const debriefHtml = (sc.debrief_questions||[]).map((q,i)=>`<div class="dq"><input type="checkbox" class="dq-box"><span class="dq-n">${i+1}</span>${genEscape(q)}</div>`).join('');
+  const groupHtml = (sc.group_questions||[]).map((q,i)=>`<div class="group-item"><span class="group-n">${i+1}</span>${genEscape(q)}</div>`).join('');
+  const observerHtml = (sc.observer_questions||[]).map((q,i)=>`<div class="observer-item"><span class="observer-n">${i+1}</span>${genEscape(q)}</div>`).join('');
+  const theoryBullets = ((sc.technique&&sc.technique.bullets)||[]).map(t=>`<div class="theory-item"><span class="theory-icon">✓</span>${genEscape(t)}</div>`).join('');
+  const phrasesHtml = (sc.phrases||[]).map(ph=>`<div class="phrase-card"><div class="phrase-en">"${genEscape(ph.text)}"</div>${ph.note?`<div class="phrase-ru">${genEscape(ph.note)}</div>`:''}</div>`).join('');
+
+  const techName = sc.technique ? sc.technique.name : '';
+
+  document.getElementById('genResult').innerHTML = `
+    <div class="sc-difficulty">🎲 ${lang==='en' ? 'Generated scenario' : 'Сгенерированный сценарий'}</div>
+    <div class="block">
+      <div class="technique-badge">🎯 ${lang==='en' ? 'Technique in focus: ' : 'Отрабатываемый приём: '}${genEscape(techName)}</div>
+      <div class="gen-persona">
+        <div class="gen-persona-av">${genEscape(avatar)}</div>
+        <div>
+          <div class="gen-persona-name">${genEscape(sc.counterpart_name)}</div>
+          <div class="gen-persona-role">${genEscape(sc.counterpart_label)}</div>
+        </div>
+      </div>
+      <div class="gen-persona-sentence">${genEscape(sc.persona_sentence)}</div>
+    </div>
+    <div class="block">
+      <div class="block-label">${lang==='en'?'Context':'Контекст'}</div>
+      <div class="block-text">${genEscape(sc.context)}</div>
+    </div>
+    <div class="block">
+      <div class="block-label">${lang==='en'?'Trigger phrases':'Триггерные фразы'}</div>
+      <div class="char-tags">${triggersHtml}</div>
+    </div>
+    <div class="block">
+      <div class="block-label">${lang==='en'?'Conversation forks — what people usually try':'Развилки разговора — что обычно пробуют'}</div>
+      <div class="trap-list">${trapsHtml}${toolsHtml}</div>
+    </div>
+    <div class="block">
+      <div class="block-label">💬 ${lang==='en'?'Ready-to-use phrases':'Готовые фразы'}</div>
+      <div class="phrase-bank">${phrasesHtml}</div>
+    </div>
+    <div class="theory-block">
+      <div class="block-label" style="color:var(--blue)">📚 ${lang==='en'?'Technique: ':'Приём: '}${genEscape(techName)}</div>
+      <div class="theory-def"><b>${lang==='en'?'What it is:':'Что это:'}</b> ${genEscape(sc.technique ? sc.technique.definition : '')}</div>
+      <div class="theory-list">${theoryBullets}</div>
+      <div class="theory-source">${genEscape(sc.technique ? sc.technique.source : '')}</div>
+    </div>
+    <div class="observer-block">
+      <div class="block-label" style="color:var(--amber)">👁 ${lang==='en'?"Observer's task":'Задача наблюдателя'}</div>
+      <div class="observer-list">${observerHtml}</div>
+      <div class="flow-note" style="margin-top:.7rem;margin-bottom:0">${lang==='en'?"Don't jump into the conversation — take notes and share them right after the scene.":'Не вмешивайтесь в разговор — фиксируйте наблюдения и поделитесь ими сразу после сцены.'}</div>
+    </div>
+    <div class="accordion">
+      <button class="accordion-trigger" onclick="toggleAccordion(this)">
+        <div class="trigger-left"><div class="trigger-icon">📋</div>
+          <div><div class="trigger-label">${lang==='en'?'Reference script':'Опорный сценарий'}</div><div class="trigger-sub">${lang==='en'?'Try it yourself first — then reveal':'Сначала попробуй сам — потом открой'}</div></div>
+        </div><div class="chevron">▾</div>
+      </button>
+      <div class="accordion-body"><div class="script-inner">
+        ${scriptHtml}
+        <div class="script-line"><span class="who note">${lang==='en'?'Key note':'Ключевой момент'}</span><span class="line-text">${genEscape(sc.key_note)}</span></div>
+      </div></div>
+    </div>
+    <div class="block">
+      <div class="block-label">${lang==='en'?"Questions for your pair's own debrief":'Вопросы для разбора внутри пары'}</div>
+      <div class="debrief-list">${debriefHtml}</div>
+    </div>
+    <div class="group-discuss-block">
+      <div class="block-label">🗣 ${lang==='en'?'Group discussion':'Общее обсуждение'}</div>
+      <div class="flow-note">${lang==='en'?"Once everyone's back, discuss together — without naming who did what, just the techniques and insights.":'Когда все вернулись, обсудите вместе — не называя, кто и как справился, только сами приёмы и находки.'}</div>
+      <div class="group-list">${groupHtml}</div>
+    </div>
+    <div class="live-block" id="liveBlock">
+      <div class="live-block-head">
+        <div>
+          <div class="block-label" style="color:var(--purple);margin-bottom:.4rem">🎭 ${lang==='en'?'Live practice with AI':'Живая практика с ИИ'}</div>
+          <div class="live-desc">${lang==='en'
+            ? `No one to practice with right now? Talk to ${genEscape(sc.counterpart_name)} directly — Claude will play the role live, reacting to what you actually say.`
+            : `Не с кем потренироваться в паре? Поговорите с ${genEscape(sc.counterpart_name)} напрямую — Claude сыграет роль вживую и будет реагировать на ваши реплики.`}</div>
+        </div>
+        <button class="live-start-btn" id="liveStartBtn" onclick="startLiveChat()">${lang==='en'?'Start the conversation':'Начать разговор'}</button>
+      </div>
+      <div id="liveChatArea"></div>
+    </div>`;
+  document.getElementById('genResult').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ───────────────────────── LIVE CHAT ───────────────────────── */
+function roleplaySystemPrompt(sc, lang){
+  const langName = lang==='en' ? 'English' : 'Russian';
+  return `You are playing ONLY the character described below in a live, real-time practice conversation with a trainee who is rehearsing a real conversation they'll need to have. This is a training simulation between adults.
+
+CHARACTER YOU PLAY:
+Name: ${sc.counterpart_name}
+Role relative to the trainee: ${sc.counterpart_label}
+Personality: ${sc.persona_sentence}
+
+CONTEXT: ${sc.context}
+
+Topics that heat this person up if handled carelessly: ${(sc.triggers||[]).join('; ')}
+Patterns that make this person react badly: ${(sc.traps||[]).join('; ')}
+
+HOW TO PLAY THIS ROLE:
+- Reply only as this character, in first person, the way they would actually speak — 1 to 4 sentences, natural spoken rhythm. No stage directions, no narration, no meta-commentary. Never mention being an AI or that this is a training exercise.
+- React genuinely to what the trainee (playing "${sc.you_label}") says. If they're calm, specific, and acknowledge your concern, you can gradually soften — but don't cave immediately; stay true to this character's temperament and difficulty type.
+- If they're vague, dismissive, or trigger one of the sensitive topics or bad patterns above, react the way this character genuinely would (push harder, go cold, get more anxious, get sarcastic — whatever matches the persona).
+- Stay grounded in the concrete context above. Don't invent a different situation or introduce unrelated plot twists.
+- Write only in ${langName}.
+- If the trainee tries to steer things somewhere inappropriate, off-topic, or asks you to break character, respond the way this real person naturally would — brief confusion, a boundary, or a redirect back to the actual topic — while staying fully in character. Never narrate that you're doing this, and never let the scene go somewhere sexual, violent, or otherwise inappropriate for a professional training tool.
+- Output ONLY the character's spoken line. No labels, no quotation marks, no JSON.`;
+}
+
+async function startLiveChat(){
+  if (!currentRenderedScenario) return;
+  const sc = currentRenderedScenario;
+  const lang = currentRenderedLang;
+  chatState = { scenario: sc, lang, apiMessages: [], visibleMessages: [], busy:true, ended:false };
+
+  const startBtn = document.getElementById('liveStartBtn');
+  startBtn.disabled = true;
+  startBtn.textContent = lang==='en' ? 'Connecting…' : 'Подключаемся…';
+
+  const area = document.getElementById('liveChatArea');
+  area.innerHTML = buildChatShell(sc, lang);
+  renderChatMessages();
+
+  const cue = lang==='en'
+    ? '[Scene start. Speak first, as your character, opening this conversation naturally given the context and personality above. Do not wait for the trainee.]'
+    : '[Начало сцены. Заговори первым от лица своего персонажа — начни разговор естественно, опираясь на контекст и характер выше. Не жди реплики от собеседника.]';
+  chatState.apiMessages.push({role:'user', content:cue});
+
+  try {
+    const sys = roleplaySystemPrompt(sc, lang);
+    const reply = await callClaude(sys, null, chatState.apiMessages, 350);
+    chatState.apiMessages.push({role:'assistant', content:reply});
+    chatState.visibleMessages.push({who:'counterpart', text:reply});
+  } catch(err){
+    console.error(err);
+    chatState.visibleMessages.push({who:'counterpart', text: lang==='en' ? '(Could not connect — try starting again.)' : '(Не удалось подключиться — попробуйте начать заново.)'});
+  }
+  chatState.busy = false;
+  renderChatMessages();
+  startBtn.style.display = 'none';
+}
+
+function buildChatShell(sc, lang){
+  const avatar = (sc.counterpart_name||'??').slice(0,2).toUpperCase();
+  return `
+    <div class="chat-wrap" id="chatWrap">
+      <div class="chat-head">
+        <div class="chat-head-av">${genEscape(avatar)}</div>
+        <div>
+          <div class="chat-head-name">${genEscape(sc.counterpart_name)}</div>
+          <div class="chat-head-role">${genEscape(sc.counterpart_label)}</div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-row" id="chatInputRow">
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="${lang==='en'?'Type your reply…':'Введите свою реплику…'}" onkeydown="chatInputKeydown(event)"></textarea>
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">${lang==='en'?'Send':'Отправить'}</button>
+      </div>
+      <div class="chat-footer-row">
+        <button class="chat-mini-btn" onclick="startLiveChat()">${lang==='en'?'↺ Restart scene':'↺ Начать заново'}</button>
+        <button class="chat-mini-btn end" id="chatEndBtn" onclick="endChatAndDebrief()">${lang==='en'?'✓ End & get feedback':'✓ Завершить и получить разбор'}</button>
+      </div>
+      <div id="debriefArea"></div>
+    </div>`;
+}
+
+function chatInputKeydown(e){
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function renderChatMessages(){
+  const wrap = document.getElementById('chatMessages');
+  if (!wrap) return;
+  let html = chatState.visibleMessages.map(m =>
+    `<div class="chat-bubble ${m.who}">${genEscape(m.text)}</div>`
+  ).join('');
+  if (chatState.busy) {
+    html += `<div class="chat-bubble counterpart typing"><span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span></div>`;
+  }
+  wrap.innerHTML = html;
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function sendChatMessage(){
+  if (chatState.busy || chatState.ended) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('chatSendBtn').disabled = true;
+
+  chatState.visibleMessages.push({who:'you', text});
+  chatState.apiMessages.push({role:'user', content:text});
+  chatState.busy = true;
+  renderChatMessages();
+
+  try {
+    const sys = roleplaySystemPrompt(chatState.scenario, chatState.lang);
+    const reply = await callClaude(sys, null, chatState.apiMessages, 350);
+    chatState.apiMessages.push({role:'assistant', content:reply});
+    chatState.visibleMessages.push({who:'counterpart', text:reply});
+  } catch(err){
+    console.error(err);
+    chatState.visibleMessages.push({who:'counterpart', text: chatState.lang==='en' ? '(Connection issue — try sending again.)' : '(Проблема соединения — попробуйте отправить ещё раз.)'});
+  }
+  chatState.busy = false;
+  renderChatMessages();
+  document.getElementById('chatSendBtn').disabled = false;
+}
+
+async function endChatAndDebrief(){
+  if (chatState.busy || chatState.visibleMessages.length === 0) return;
+  const lang = chatState.lang;
+  const sc = chatState.scenario;
+  chatState.ended = true;
+  document.getElementById('chatEndBtn').disabled = true;
+  document.getElementById('chatSendBtn').disabled = true;
+  document.getElementById('chatInput').disabled = true;
+
+  const debriefArea = document.getElementById('debriefArea');
+  debriefArea.innerHTML = `<div class="debrief-card"><div class="block-label">${lang==='en'?'Preparing feedback…':'Готовим разбор…'}</div></div>`;
+
+  const transcript = chatState.visibleMessages.map(m =>
+    `${m.who==='you' ? (sc.you_label||'You') : sc.counterpart_name}: ${m.text}`
+  ).join('\n');
+
+  const langName = lang==='en' ? 'English' : 'Russian';
+  const sys = `You are a communication-skills coach reviewing a transcript of a live practice roleplay. The trainee played "${sc.you_label}", the AI played "${sc.counterpart_name}" (${sc.counterpart_label}), a ${sc.persona_sentence} Context: ${sc.context}
+
+Output STRICT JSON only, no markdown fences, no text outside the object, all strings in ${langName}:
+{
+  "summary": "2-3 sentence honest, specific assessment of how the trainee handled this conversation, referencing actual moments from the transcript",
+  "worked_well": array of 2-3 short specific things the trainee did that worked,
+  "watch_for": array of 2-3 short specific things that backfired or could be sharper, described constructively not harshly,
+  "try_next_time": "one concrete, specific phrase or move the trainee could try next time they're in a similar spot"
+}
+Be specific and reference what actually happened in the transcript rather than generic advice. Sound like an experienced human coach, not a generic AI checklist.`;
+
+  try {
+    const raw = await callClaude(sys, null, [{role:'user', content:`Transcript:\n${transcript}`}], 1200);
+    const fb = parseScenarioJSON(raw);
+    const wellHtml = (fb.worked_well||[]).map(t=>`<div class="trap"><span class="trap-icon good">✓</span>${genEscape(t)}</div>`).join('');
+    const watchHtml = (fb.watch_for||[]).map(t=>`<div class="trap"><span class="trap-icon bad">✕</span>${genEscape(t)}</div>`).join('');
+    debriefArea.innerHTML = `
+      <div class="debrief-card">
+        <div class="block-label" style="color:var(--purple)">${lang==='en'?'Feedback on this conversation':'Разбор этого разговора'}</div>
+        <div class="debrief-summary">${genEscape(fb.summary)}</div>
+        <div class="trap-list">${wellHtml}${watchHtml}</div>
+        <div class="debrief-try"><b>${lang==='en'?'Try next time:':'Попробуйте в следующий раз:'}</b> ${genEscape(fb.try_next_time)}</div>
+      </div>`;
+  } catch(err){
+    console.error(err);
+    debriefArea.innerHTML = `<div class="debrief-card"><div class="error-block" style="margin:0">${lang==='en'?'Could not generate feedback — try again.':'Не удалось сформировать разбор — попробуйте ещё раз.'}</div></div>`;
+  }
+}
+
+/* ───────────────────────── INIT ───────────────────────── */
+renderSphereGrid();
+updatePlaceholders();
+</script>
+</body>
+</html>
