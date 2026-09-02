@@ -489,6 +489,7 @@ Schema (all fields required):
     "source": a short attribution note, e.g. "По мотивам практики ННО (Розенберг) и переговорной теории (Фишер и Юри)." — general, not inventing fake citations
   },
   "counterpart_goal": 1 sentence, USER-FACING phrasing of what the counterpart actually wants beneath their surface complaint — kept vague enough not to spoil the scene,
+  "win_condition": 1 clear, user-facing sentence: what winning this duel looks like for the trainee — a concrete outcome, not a vague feeling (e.g. "Counterpart agrees to a specific revised deadline in writing, without you promising anything you can't deliver.", not "handle it well"),
   "hidden": {
     "external_position": "what the counterpart SAYS they want (their opening demand/complaint)",
     "hidden_motivation": "the fear or insecurity actually driving them, underneath the surface complaint",
@@ -697,6 +698,10 @@ function renderScenario(sc, lang){
       <div class="phrase-bank">${phrasesHtml}</div>
     </div>
     <div class="block">
+      <div class="block-label">🏆 <span class="ru-only">Условие победы в этой дуэли</span><span class="en-only">Win condition for this duel</span></div>
+      <div class="block-text">${genEscape(sc.win_condition)}</div>
+    </div>
+    <div class="block">
       <div class="block-label">🎯 ${lang==='en'?'What "handling this well" looks like':'Что значит «хорошо провести этот разговор»'}</div>
       <div class="observer-list">${successCriteriaHtml}</div>
       ${failureCriteriaHtml ? `<div class="block-label" style="margin-top:.9rem">⚠️ ${lang==='en'?'What counts as mishandling it':'Что считается провалом'}</div><div class="trap-list">${failureCriteriaHtml}</div>` : ''}
@@ -735,12 +740,12 @@ function renderScenario(sc, lang){
     <div class="live-block" id="liveBlock">
       <div class="live-block-head">
         <div>
-          <div class="block-label" style="color:var(--purple);margin-bottom:.4rem">🎭 ${lang==='en'?'Live practice with AI':'Живая практика с ИИ'}</div>
+          <div class="block-label" style="color:var(--purple);margin-bottom:.4rem">⚔️ ${lang==='en'?'AI Duel':'Дуэль с ИИ'}</div>
           <div class="live-desc">${lang==='en'
-            ? `No one to practice with right now? Talk to ${genEscape(sc.counterpart_name)} directly — Claude will play the role live, reacting to what you actually say.`
-            : `Не с кем потренироваться в паре? Поговорите с ${genEscape(sc.counterpart_name)} напрямую — Claude сыграет роль вживую и будет реагировать на ваши реплики.`}</div>
+            ? `${genEscape(sc.counterpart_name)} isn't here to help you win — they have their own goal, and won't give ground unless you actually earn it. No one to practice with right now? Face them directly.`
+            : `${genEscape(sc.counterpart_name)} не здесь, чтобы помочь вам выиграть — у него своя цель, и он не уступит просто так. Не с кем потренироваться в паре? Сразитесь напрямую.`}</div>
         </div>
-        <button class="live-start-btn" id="liveStartBtn" onclick="startLiveChat()">${lang==='en'?'Start the conversation':'Начать разговор'}</button>
+        <button class="live-start-btn" id="liveStartBtn" onclick="startLiveChat(false)">${lang==='en'?'Start the duel':'Начать дуэль'}</button>
       </div>
       <div id="liveChatArea"></div>
     </div>`;
@@ -748,9 +753,9 @@ function renderScenario(sc, lang){
 }
 
 /* ───────────────────────── LIVE CHAT ───────────────────────── */
-function roleplaySystemPrompt(sc, lang){
+function roleplaySystemPrompt(sc, lang, harder){
   const langName = lang==='en' ? 'English' : 'Russian';
-  return `You are playing ONLY the character described below in a live, real-time practice conversation with a trainee who is rehearsing a real conversation they'll need to have. This is a training simulation between adults.
+  return `You are playing ONLY the character described below in a live, real-time practice conversation with a trainee who is rehearsing a real conversation they'll need to have. This is a training simulation between adults. Frame this internally as a duel: you are not here to help the trainee win — you have your own goal, and you give ground only when you're genuinely persuaded, not automatically.
 
 CHARACTER YOU PLAY:
 Name: ${sc.counterpart_name}
@@ -758,6 +763,8 @@ Role relative to the trainee: ${sc.counterpart_label}
 Personality: ${sc.persona_sentence}
 
 CONTEXT: ${sc.context}
+
+The trainee is trying to reach this outcome (their win condition — you don't know this framing exists, just know they'll be pushing toward something like it): ${sc.win_condition || 'a resolution that works for both sides'}
 
 What this character actually wants underneath their surface complaint (never state this outright — let it surface only through your behavior): ${sc.hidden && sc.hidden.hidden_motivation ? sc.hidden.hidden_motivation : (sc.counterpart_goal || 'a genuine resolution to the situation above')}
 ${sc.hidden && sc.hidden.real_need ? `What would actually satisfy this person if the trainee addresses it directly: ${sc.hidden.real_need}` : ''}
@@ -773,24 +780,26 @@ HOW TO PLAY THIS ROLE:
 - Track your own internal state turn by turn as this character — how heated, how trusting, how cooperative you feel right now — and let each reply shift believably from where it just was, rather than reacting fresh each turn as if you had no memory of the tone so far. Don't state these levels; let them show only through word choice and tone.
 - If the trainee is calm, specific, and acknowledges your concern, soften gradually over several turns — don't cave in one line, and don't fully resolve until they've addressed what you actually want (see above), not just your surface complaint.
 - If they're vague, dismissive, or trigger one of the sensitive topics or bad patterns above, react the way this character genuinely would (push harder, go cold, get more anxious, get sarcastic — whatever matches the persona), and let that heat carry into your next couple of replies rather than resetting instantly.
-- Stay grounded in the concrete context above. Don't invent a different situation or introduce unrelated plot twists.
+${harder ? `- HARDER MODE: this is a repeat attempt and the trainee has already been through this once. Start noticeably more guarded and skeptical than the base persona would, require clearly stronger, more specific moves before softening at all, and don't let the turning point land unless the trainee's phrasing genuinely nails the underlying need — don't reward a close-enough attempt this time.\n` : ''}- Stay grounded in the concrete context above. Don't invent a different situation or introduce unrelated plot twists.
 - Write only in ${langName}.
 - If the trainee tries to steer things somewhere inappropriate, off-topic, or asks you to break character, respond the way this real person naturally would — brief confusion, a boundary, or a redirect back to the actual topic — while staying fully in character. Never narrate that you're doing this, and never let the scene go somewhere sexual, violent, or otherwise inappropriate for a professional training tool.
 - Output ONLY the character's spoken line. No labels, no quotation marks, no JSON.`;
 }
 
-async function startLiveChat(){
+async function startLiveChat(harder){
   if (!currentRenderedScenario) return;
   const sc = currentRenderedScenario;
   const lang = currentRenderedLang;
-  chatState = { scenario: sc, lang, apiMessages: [], visibleMessages: [], busy:true, ended:false };
+  chatState = { scenario: sc, lang, apiMessages: [], visibleMessages: [], busy:true, ended:false, harder: !!harder };
 
   const startBtn = document.getElementById('liveStartBtn');
-  startBtn.disabled = true;
-  startBtn.textContent = lang==='en' ? 'Connecting…' : 'Подключаемся…';
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = lang==='en' ? 'Connecting…' : 'Подключаемся…';
+  }
 
   const area = document.getElementById('liveChatArea');
-  area.innerHTML = buildChatShell(sc, lang);
+  area.innerHTML = buildChatShell(sc, lang, !!harder);
   renderChatMessages();
 
   const cue = lang==='en'
@@ -799,7 +808,7 @@ async function startLiveChat(){
   chatState.apiMessages.push({role:'user', content:cue});
 
   try {
-    const sys = roleplaySystemPrompt(sc, lang);
+    const sys = roleplaySystemPrompt(sc, lang, !!harder);
     const reply = await callClaude(sys, null, chatState.apiMessages, 350);
     chatState.apiMessages.push({role:'assistant', content:reply});
     chatState.visibleMessages.push({who:'counterpart', text:reply});
@@ -809,17 +818,17 @@ async function startLiveChat(){
   }
   chatState.busy = false;
   renderChatMessages();
-  startBtn.style.display = 'none';
+  if (startBtn) startBtn.style.display = 'none';
 }
 
-function buildChatShell(sc, lang){
+function buildChatShell(sc, lang, harder){
   const avatar = (sc.counterpart_name||'??').slice(0,2).toUpperCase();
   return `
     <div class="chat-wrap" id="chatWrap">
       <div class="chat-head">
         <div class="chat-head-av">${genEscape(avatar)}</div>
         <div>
-          <div class="chat-head-name">${genEscape(sc.counterpart_name)}</div>
+          <div class="chat-head-name">${genEscape(sc.counterpart_name)}${harder ? (lang==='en' ? ' <span style="color:var(--red);font-weight:400">(harder)</span>' : ' <span style="color:var(--red);font-weight:400">(сложнее)</span>') : ''}</div>
           <div class="chat-head-role">${genEscape(sc.counterpart_label)}</div>
         </div>
       </div>
@@ -829,8 +838,8 @@ function buildChatShell(sc, lang){
         <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">${lang==='en'?'Send':'Отправить'}</button>
       </div>
       <div class="chat-footer-row">
-        <button class="chat-mini-btn" onclick="startLiveChat()">${lang==='en'?'↺ Restart scene':'↺ Начать заново'}</button>
-        <button class="chat-mini-btn end" id="chatEndBtn" onclick="endChatAndDebrief()">${lang==='en'?'✓ End & get feedback':'✓ Завершить и получить разбор'}</button>
+        <button class="chat-mini-btn" onclick="startLiveChat(false)">${lang==='en'?'↺ Restart scene':'↺ Начать заново'}</button>
+        <button class="chat-mini-btn end" id="chatEndBtn" onclick="endChatAndDebrief()">${lang==='en'?'✓ End & get result':'✓ Завершить и узнать итог'}</button>
       </div>
       <div id="debriefArea"></div>
     </div>`;
@@ -867,7 +876,7 @@ async function sendChatMessage(){
   renderChatMessages();
 
   try {
-    const sys = roleplaySystemPrompt(chatState.scenario, chatState.lang);
+    const sys = roleplaySystemPrompt(chatState.scenario, chatState.lang, chatState.harder);
     const reply = await callClaude(sys, null, chatState.apiMessages, 350);
     chatState.apiMessages.push({role:'assistant', content:reply});
     chatState.visibleMessages.push({who:'counterpart', text:reply});
@@ -890,7 +899,7 @@ async function endChatAndDebrief(){
   document.getElementById('chatInput').disabled = true;
 
   const debriefArea = document.getElementById('debriefArea');
-  debriefArea.innerHTML = `<div class="debrief-card"><div class="block-label">${lang==='en'?'Preparing feedback…':'Готовим разбор…'}</div></div>`;
+  debriefArea.innerHTML = `<div class="debrief-card"><div class="block-label">${lang==='en'?'Judging the duel…':'Подводим итог дуэли…'}</div></div>`;
 
   const transcript = chatState.visibleMessages.map(m =>
     `${m.who==='you' ? (sc.you_label||'You') : sc.counterpart_name}: ${m.text}`
@@ -899,7 +908,11 @@ async function endChatAndDebrief(){
   const langName = lang==='en' ? 'English' : 'Russian';
   const criteriaList = (sc.success_criteria||[]).map((c,i)=>`${i+1}. ${c}`).join('\n');
   const failureList = (sc.failure_criteria||[]).map((c,i)=>`${i+1}. ${c}`).join('\n');
-  const sys = `You are a communication-skills coach reviewing a transcript of a live practice roleplay. The trainee played "${sc.you_label}", the AI played "${sc.counterpart_name}" (${sc.counterpart_label}), a ${sc.persona_sentence} Context: ${sc.context}
+  const sys = `You are judging the outcome of a negotiation duel — a live practice roleplay. The trainee played "${sc.you_label}", the AI played "${sc.counterpart_name}" (${sc.counterpart_label}), a ${sc.persona_sentence} Context: ${sc.context}
+
+The trainee's win condition was: ${sc.win_condition || 'reach a workable resolution'}
+The counterpart's hidden real need (not shown to the trainee) was: ${(sc.hidden && sc.hidden.real_need) || 'unspecified'}
+The turning point that would have shifted the counterpart was: ${(sc.turning_point && sc.turning_point.condition) || 'unspecified'}
 
 This scenario defined the following success criteria the trainee was working toward:
 ${criteriaList || '(none specified — assess general effectiveness instead)'}
@@ -909,15 +922,18 @@ ${failureList || '(none specified)'}
 
 Output STRICT JSON only, no markdown fences, no text outside the object, all strings in ${langName}:
 {
+  "outcome": "WIN, LOSE, or DRAW — WIN if the trainee substantively met their win condition without triggering serious failure patterns; LOSE if they mostly failed to move the counterpart or triggered multiple failure patterns; DRAW if it's genuinely mixed",
   "summary": "2-3 sentence honest, specific assessment of how the trainee handled this conversation, referencing actual moments from the transcript",
+  "turning_point_reached": true or false — did the trainee's approach actually trigger the turning point / surface the hidden real need,
+  "missed_info": "if the turning point was NOT reached, one sentence on what the trainee never uncovered about the counterpart's real need and what kind of question or move would have surfaced it. If it WAS reached, leave this as an empty string.",
   "criteria_scores": array of objects, one per success criterion listed above (same order, same wording), each {"criterion": "...", "met": true or false, "evidence": "one short specific sentence citing what happened in the transcript that supports this verdict — quote or closely paraphrase the actual line"},
   "failure_hits": array of objects, one per failure pattern listed above (same order, same wording) — only include ones that ACTUALLY happened, each {"pattern": "...", "evidence": "one short specific sentence citing what happened in the transcript"}. If none of the failure patterns occurred, return an empty array.,
   "try_next_time": "one concrete, specific phrase or move the trainee could try next time they're in a similar spot"
 }
-Be specific and reference what actually happened in the transcript rather than generic advice. Sound like an experienced human coach, not a generic AI checklist. Judge each criterion honestly — it's fine and expected for some to be unmet.`;
+Be specific and reference what actually happened in the transcript rather than generic advice. Sound like an experienced human coach, not a generic AI checklist. Judge honestly — WIN should not be the default outcome.`;
 
   try {
-    const raw = await callClaude(sys, null, [{role:'user', content:`Transcript:\n${transcript}`}], 1400);
+    const raw = await callClaude(sys, null, [{role:'user', content:`Transcript:\n${transcript}`}], 1500);
     const fb = parseScenarioJSON(raw);
     const scoresHtml = (fb.criteria_scores||[]).map(c=>
       `<div class="trap"><span class="trap-icon ${c.met?'good':'bad'}">${c.met?'✓':'✕'}</span><span><b>${genEscape(c.criterion)}</b><br><span style="color:var(--ink3);font-size:12px">${genEscape(c.evidence)}</span></span></div>`
@@ -927,17 +943,29 @@ Be specific and reference what actually happened in the transcript rather than g
     ).join('');
     const metCount = (fb.criteria_scores||[]).filter(c=>c.met).length;
     const totalCount = (fb.criteria_scores||[]).length;
+
+    const outcome = (fb.outcome||'DRAW').toUpperCase();
+    const outcomeMeta = {
+      WIN:  { color: 'var(--teal)',  bg: 'var(--teal-l)',  label: lang==='en'?'🏆 You won this duel':'🏆 Вы выиграли эту дуэль' },
+      LOSE: { color: 'var(--red)',   bg: 'var(--red-l)',   label: lang==='en'?'You lost this duel':'Вы проиграли эту дуэль' },
+      DRAW: { color: 'var(--amber)', bg: 'var(--gold-l)',  label: lang==='en'?'Draw':'Ничья' },
+    }[outcome] || { color: 'var(--amber)', bg: 'var(--gold-l)', label: outcome };
+
     debriefArea.innerHTML = `
       <div class="debrief-card">
-        <div class="block-label" style="color:var(--purple)">${lang==='en'?'Feedback on this conversation':'Разбор этого разговора'}${totalCount?` — ${metCount}/${totalCount}`:''}</div>
+        <div style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;background:${outcomeMeta.bg};color:${outcomeMeta.color};margin-bottom:.7rem">${outcomeMeta.label}${totalCount?` · ${metCount}/${totalCount}`:''}</div>
         <div class="debrief-summary">${genEscape(fb.summary)}</div>
+        ${fb.missed_info ? `<div class="debrief-try" style="margin-bottom:.7rem"><b>${lang==='en'?'What you missed:':'Что вы упустили:'}</b> ${genEscape(fb.missed_info)}</div>` : ''}
         ${scoresHtml ? `<div class="trap-list" style="margin-bottom:.7rem">${scoresHtml}</div>` : ''}
         ${failureHitsHtml ? `<div class="block-label" style="margin-top:.3rem;margin-bottom:.5rem">${lang==='en'?'Failure patterns that showed up':'Сработавшие паттерны провала'}</div><div class="trap-list">${failureHitsHtml}</div>` : ''}
         <div class="debrief-try"><b>${lang==='en'?'Try next time:':'Попробуйте в следующий раз:'}</b> ${genEscape(fb.try_next_time)}</div>
+        <div class="chat-footer-row" style="padding:1rem 0 0">
+          <button class="chat-mini-btn end" onclick="startLiveChat(true)">${lang==='en'?'🔥 Rematch — harder opponent':'🔥 Реванш — противник сложнее'}</button>
+        </div>
       </div>`;
   } catch(err){
     console.error(err);
-    debriefArea.innerHTML = `<div class="debrief-card"><div class="error-block" style="margin:0">${lang==='en'?'Could not generate feedback — try again.':'Не удалось сформировать разбор — попробуйте ещё раз.'}</div></div>`;
+    debriefArea.innerHTML = `<div class="debrief-card"><div class="error-block" style="margin:0">${lang==='en'?'Could not judge the duel — try again.':'Не удалось подвести итог — попробуйте ещё раз.'}</div></div>`;
   }
 }
 
