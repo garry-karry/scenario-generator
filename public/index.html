@@ -546,7 +546,7 @@ async function callClaude(system, userPrompt, messagesOverride, maxTokens){
     throw new Error("API returned a non-JSON response (HTTP " + response.status + ")");
   }
   if (!response.ok) {
-    const msg = (data && data.error && data.error.message) ? data.error.message : ("HTTP " + response.status);
+    const msg = (data && data.error) ? (typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error))) : ("HTTP " + response.status);
     throw new Error("API request failed: " + msg);
   }
   if (data.error) {
